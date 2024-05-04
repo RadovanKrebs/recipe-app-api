@@ -1,6 +1,7 @@
 """
 Database models.
 """
+
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -21,9 +22,7 @@ class UserManager(BaseUserManager):
         try:
             validate_email(email)
         except ValidationError:
-            raise ValueError(
-                f"User provided with a invalid email address: {email}"
-            )
+            raise ValueError(f"User provided with a invalid email address: {email}")
 
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
@@ -43,6 +42,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """User in the system."""
+
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -50,4 +50,4 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
