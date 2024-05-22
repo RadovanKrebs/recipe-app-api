@@ -259,3 +259,56 @@ class PrivateRecipeAPITests(TestCase):
                 user=self.user,
             ).exists()
             self.assertTrue(exists)
+
+    def test_recipe_create_tag_on_update(self):
+        """Test creating a new tag when updating a recipe."""
+        recipe = create_recipe(self.user)
+        tag_name = 'Chicken'
+
+        payload = {
+            "tags": [
+                {'name': tag_name},
+            ],
+        }
+
+        res = self.client.patch(detail_url(recipe.id), payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        new_tag = Tag.objects.get(name=tag_name)
+        self.assertEqual(recipe.tags.count(), len(payload["tags"]))
+        self.assertIn(new_tag, recipe.tags.all())
+
+    def test_update_recipe_assign_tag(self):
+        """Test assigning an existing tag when updating a recipe."""
+        old_tag = Tag.objects.create(user=self.user, name="Lunch")
+        recipe = create_recipe(self.user)
+        recipe.tags.add(old_tag)
+
+        existing_tag = Tag.objects.create(user=self.user, name='Breakfast')
+        payload = {
+            "tags": [
+                {"name": existing_tag.name},
+            ],
+        }
+
+        res = self.client.patch(detail_url(recipe.id), payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(existing_tag, recipe.tags.all())
+        self.assertEqual(Tag.objects.filter(name=existing_tag.name).count(), 1)
+        self.assertNotIn(old_tag, recipe.tags.all())
+
+    def test_clear_recipe_tags(self):
+        """Test removing all tags from recipe."""
+        old_tag = Tag.objects.create(user=self.user, name="Lunch")
+        recipe = create_recipe(self.user)
+        recipe.tags.add(old_tag)
+
+        payload = {
+            "tags": [],
+        }
+
+        res = self.client.patch(detail_url(recipe.id), payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(recipe.tags.all().count(), 0)
